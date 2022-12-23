@@ -33,28 +33,28 @@ class Scene {
     generateCardsLayoutDemo() {
         let cardContainers = [];
 
-        let testContainerBottom = new CardContainer(200, 160);
-        testContainerBottom.placeCard(new Card());
+        let testContainerBottom = new CardContainer(0, 200, 160);
+        testContainerBottom.placeCard(new Card(0));
         cardContainers.push(testContainerBottom);
 
-        let testContainerTopA = new CardContainer(180, 150);
-        testContainerTopA.placeCard(new Card(1));
+        let testContainerTopA = new CardContainer(1, 180, 150);
+        testContainerTopA.placeCard(new Card(1,1));
         testContainerTopA.placeAbove(testContainerBottom);
         cardContainers.push(testContainerTopA);
 
-        let testContainerTopB = new CardContainer(220, 150);
-        testContainerTopB.placeCard(new Card(1));
+        let testContainerTopB = new CardContainer(2, 220, 150);
+        testContainerTopB.placeCard(new Card(2,1));
         testContainerTopB.placeAbove(testContainerBottom);
         cardContainers.push(testContainerTopB);
 
-        let testContainerTopMost = new CardContainer(200, 140);
-        testContainerTopMost.placeCard(new Card());
+        let testContainerTopMost = new CardContainer(3, 200, 140);
+        testContainerTopMost.placeCard(new Card(3));
         testContainerTopMost.placeAbove(testContainerTopA);
         testContainerTopMost.placeAbove(testContainerTopB);
         cardContainers.push(testContainerTopMost);
 
-        let testContainerTopMostMost = new CardContainer(200, 130);
-        testContainerTopMostMost.placeCard(new Card(1));
+        let testContainerTopMostMost = new CardContainer(4, 200, 130);
+        testContainerTopMostMost.placeCard(new Card(4,1));
         testContainerTopMostMost.placeAbove(testContainerTopMost);
         cardContainers.push(testContainerTopMostMost);
 
@@ -135,7 +135,8 @@ class Scene {
 }
 
 class CardContainer {
-    constructor(x = 0, y = 0) {
+    constructor(id, x = 0, y = 0) {
+        this.id = id;
         this.card = null;
         this.x = x;
         this.y = y;
@@ -157,16 +158,12 @@ class CardContainer {
         cardContainer.above.push(this);
     }
 
-    placeBelow(cardContainer) {
-        this.above.push(cardContainer);
-        cardContainer.below.push(this);
-    }
-
     render() {
+        let isInteractable = this.isInteractable();
         if(this.isActive && this.card) {
             push();
             translate(this.x, this.y);
-            this.card.render(this.isInteractable() && !isMobileOrTablet);
+            this.card.render(isInteractable && !isMobileOrTablet, isInteractable);
             pop();
         }
         if(this.debug) {
@@ -174,7 +171,7 @@ class CardContainer {
             translate(this.x, this.y);
             stroke(255);
             noFill();
-            rect(-1, -1, CARD.WIDTH + 2, CARD.HEIGHT + 2, CARD.CORNER_RADIUS);
+            rect(0, 0, CARD.WIDTH + 2, CARD.HEIGHT + 2, CARD.CORNER_RADIUS);
             pop();
         }
     }
@@ -253,7 +250,7 @@ class CardScoreboard {
 
             if(cards.length === 3) {
                 for(let i = this.cards.length - 1; i >= 0; i--) {
-                    if(this.cards[i].cardType == cardType) {
+                    if(this.cards[i].cardType === parseInt(cardType)) {
                         this.cards.splice(i, 1);
                     }
                 }

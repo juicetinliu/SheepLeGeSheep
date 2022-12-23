@@ -5,8 +5,9 @@ const CARD = {
 }
 
 class Card {
-    constructor(cardType = 0) { 
-        this.cardType = cardType;
+    constructor(id, cardType = 0) { 
+        this.id = id;
+        this.cardType = parseInt(cardType);
         this.cardWidth = CARD.WIDTH;
         this.cardHeight = CARD.HEIGHT;
         this.cardCorner = CARD.CORNER_RADIUS;
@@ -15,7 +16,7 @@ class Card {
     }
 
 
-    render(isHighlightable = false) {
+    render(isHighlightable = false, isActive = true) {
         strokeWeight(1);
         stroke(0);
         if(isHighlightable && this.mouseWithin()) {
@@ -33,10 +34,16 @@ class Card {
                 fill(255, 0, 255);
                 break;
             default:
-                fill(255, 255, 255);
+                fill(255);
                 break;
         }
         rect(0, 0, this.cardWidth, this.cardHeight, this.cardCorner);
+
+        if(!isActive) {
+            noStroke();
+            fill(0, 100);
+            rect(0, 0, this.cardWidth, this.cardHeight, this.cardCorner);
+        }
     }
 
     placeInContainer(cardContainer) {

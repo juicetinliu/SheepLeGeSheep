@@ -5,8 +5,10 @@ function setup() {
     rectMode(CENTER);
     textAlign(CENTER, CENTER);
     setupHTML();
-    scene = new Scene(new GridSceneGenerator());
     // scene = new Scene();
+    // scene = new Scene(new GridSceneGenerator());
+    // scene = new Scene(new TemplateSceneGenerator());
+    scene = new Scene(new RandomSceneGenerator());
     scene.createScene();
 }
 
