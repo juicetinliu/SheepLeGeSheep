@@ -1,8 +1,9 @@
 let scene;
-
+let isMobileOrTablet = is_mobile_or_tablet_view();
 
 function setup() {
     rectMode(CENTER);
+    textAlign(CENTER);
     setupHTML();
     scene = new Scene(new GridSceneGenerator());
     // scene = new Scene();
@@ -15,13 +16,13 @@ function draw(){
 }
 
 function mousePressed() {
-    if(!is_mobile_or_tablet_view()) {
+    if(!isMobileOrTablet) {
         scene.interactWithCards();
     }
 }
 
 function touchStarted() {
-    if(is_mobile_or_tablet_view()) {
+    if(isMobileOrTablet) {
         scene.interactWithCards();
     }
 }
