@@ -1,8 +1,16 @@
 class Scene {
     constructor(sceneGenerator = null) {
+        this.sceneButtons = [];
         this.allCardContainers = [];
         this.cardScoreboard = new CardScoreboard();
         this.sceneGenerator = sceneGenerator;
+
+        this.resetButton = new SceneButton(this, width/2, height/2, 100, 50, CARD.CORNER_RADIUS, "RESET");
+        this.resetButton.disable();
+        this.resetButton.onClick(() => {
+            this.reset();
+            this.createScene();
+        });
     }
 
     createScene() {
@@ -14,6 +22,12 @@ class Scene {
 
         this.rankContainers();
         this.allCardContainers.sort((a, b) => a.rank - b.rank);
+    }
+
+    reset() {
+        this.allCardContainers = [];
+        this.cardScoreboard.reset();
+        this.resetButton.disable();
     }
 
     generateCardsLayoutDemo() {
@@ -79,7 +93,7 @@ class Scene {
         this.allCardContainers.forEach(container => {
             if(container.isActive) anyCardsLeft = true;
         });
-        
+
         if(anyCardsLeft) {
             this.allCardContainers.forEach(container => {
                 container.render();
@@ -88,12 +102,18 @@ class Scene {
             textSize(24);
             fill(255);
             text("YOU ARE 羊", width/2, 200);
+
+            this.resetButton.enable();
         }
+
+        this.sceneButtons.forEach(button => {
+            button.render();
+        });
 
         this.cardScoreboard.render();
     }
 
-    interactWithCards() {
+    interact() {
         let interactedCard = null;
         this.allCardContainers.forEach(container => {
             if(!interactedCard) {
@@ -107,6 +127,10 @@ class Scene {
         if(interactedCard) {
             this.cardScoreboard.addCard(interactedCard);
         }
+
+        this.sceneButtons.forEach(button => {
+            button.interact();
+        });
     }
 }
 
@@ -193,6 +217,11 @@ class CardScoreboard {
 
         this.x = width/2;
         this.y = height - (this.x - this.width/2) - this.height/2;
+    }
+
+    reset() {
+        this.cards = [];
+        this.cardBuckets = {};
     }
 
     render() {

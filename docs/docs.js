@@ -3,7 +3,7 @@ let isMobileOrTablet = is_mobile_or_tablet_view();
 
 function setup() {
     rectMode(CENTER);
-    textAlign(CENTER);
+    textAlign(CENTER, CENTER);
     setupHTML();
     scene = new Scene(new GridSceneGenerator());
     // scene = new Scene();
@@ -17,13 +17,13 @@ function draw(){
 
 function mousePressed() {
     if(!isMobileOrTablet) {
-        scene.interactWithCards();
+        scene.interact();
     }
 }
 
 function touchStarted() {
     if(isMobileOrTablet) {
-        scene.interactWithCards();
+        scene.interact();
     }
 }
 
@@ -35,4 +35,3 @@ function setupHTML(){
     
     main.createHTML();
 }
-  

@@ -45,6 +45,6 @@ class Card {
     }
 
     mouseWithin() {
-        return mouseX > this.x - this.cardWidth/2 && mouseX < this.x + this.cardWidth/2 && mouseY > this.y - this.cardHeight/2 && mouseY < this.y + this.cardHeight/2;
+        return pointInRect(mouseX, mouseY, this.x, this.y, CARD.WIDTH, CARD.HEIGHT);
     }
 }
