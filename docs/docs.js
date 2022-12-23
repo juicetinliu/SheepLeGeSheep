@@ -15,7 +15,15 @@ function draw(){
 }
 
 function mousePressed() {
-    scene.interactWithCards();
+    if(!is_mobile_or_tablet_view()) {
+        scene.interactWithCards();
+    }
+}
+
+function touchStarted() {
+    if(is_mobile_or_tablet_view()) {
+        scene.interactWithCards();
+    }
 }
 
 function setupHTML(){
