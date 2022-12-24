@@ -15,6 +15,9 @@ function setup() {
 function draw(){
     background(0);
     scene.render();
+
+    fill(255);
+    ellipse(mouseX, mouseY, 50, 50);
 }
 
 function mousePressed() {
