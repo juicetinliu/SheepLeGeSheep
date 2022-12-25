@@ -26,12 +26,31 @@ class TemplateEditor {
             return true;
         });
 
-        // TODO
-        // this.undoPlaceContainerButton = new IconButton(this.editorButtons, width/2 - 50, height - 50, 40, 40, CARD.CORNER_RADIUS, "undo");
-        // this.undoPlaceContainerButton.onClick(() => {
-        //     this.allCardContainers.splice(this.allCardContainers.length-1, 1);
-        //     return true;
-        // });
+        this.undoPlaceContainerButton = new IconButton(this.editorButtons, width/2 - 50, height - 50, 40, 40, CARD.CORNER_RADIUS, "undo");
+        this.undoPlaceContainerButton.onClick(() => {
+            if(!this.allCardContainers.length) return true;
+            let lastCardContainerIndex = this.allCardContainers.length - 1;
+            let toRemoveCardContainer = this.allCardContainers[lastCardContainerIndex];
+
+            //Remove containers from all containers below
+            toRemoveCardContainer.below.forEach(cardContainer => {
+                console.log(cardContainer)
+                if(cardContainer.above.length) {
+                    cardContainer.above = cardContainer.above.filter(cardContainerAbove => cardContainerAbove.id != toRemoveCardContainer.id);
+                }
+            });
+
+            let toRemoveCardContainerCoordKey = toRemoveCardContainer.x + "|" + toRemoveCardContainer.y;
+
+            //Remove from the highest map too
+            this.allCardContainersHighestRankMap[toRemoveCardContainerCoordKey] = this.allCardContainersHighestRankMap[toRemoveCardContainerCoordKey].filter(cardContainer => cardContainer.id != toRemoveCardContainer.id);
+
+            //Finally remove all traces
+            this.allCardContainers.splice(this.allCardContainers.length-1, 1);
+
+            console.log(this.allCardContainersHighestRankMap, this.allCardContainers)
+            return true;
+        });
         
         this.exitEditModeButton = new IconButton(this.editorButtons, width - 50, height - 50, 40, 40, CARD.CORNER_RADIUS, "exit");
         this.exitEditModeButton.onClick(() => {
@@ -68,7 +87,7 @@ class TemplateEditor {
             });
             this.doneEditTemplateButton.disable();
             this.exitPreviewSceneButton.disable();
-            // this.undoPlaceContainerButton.disable();
+            this.undoPlaceContainerButton.disable();
         } else if(this.editorMode === 1) {
             this.editorButtons.forEach(button => {
                 button.enable();
@@ -115,24 +134,38 @@ class TemplateEditor {
             let id = this.allCardContainers.length;
             let newCardContainer = new CardContainer(id, placeX, placeY);
             Object.entries(this.allCardContainersHighestRankMap).forEach(cardContainerCoordEntry => {
-                let coordStringArray = cardContainerCoordEntry[0].split("|");
-                let coord = {
-                    x: parseInt(coordStringArray[0]),
-                    y: parseInt(coordStringArray[1])
-                }
-                
-                if(pointInRect(placeX, placeY, coord.x, coord.y, CARD.WIDTH + 2, CARD.HEIGHT + 2)) {
-                    let highestCardContainerInCoord = cardContainerCoordEntry[1];
-                    //we also don't want to place above any card that is also below any highest card under us!
-                    if(newCardContainer.getMapOfAllCardContainerIdsBelow()[highestCardContainerInCoord.id]) {
-                        // don't place the card below our placed container since it's already contained in the tree below!
-                    } else {
-                        Object.keys(highestCardContainerInCoord.getMapOfAllCardContainerIdsBelow()).forEach(cardContainerIdUnderHighest => {
-                            newCardContainer.below = newCardContainer.below.filter(belowNew => belowNew.id != cardContainerIdUnderHighest);
-                            // also remove any cards below us that 
-                        });
+                let cardContainerListAtCoord = cardContainerCoordEntry[1];
+                if(cardContainerListAtCoord.length) {
+                    let coordStringArray = cardContainerCoordEntry[0].split("|");
+                    let coord = {
+                        x: parseInt(coordStringArray[0]),
+                        y: parseInt(coordStringArray[1])
+                    }
+                    
+                    if(pointInRect(placeX, placeY, coord.x, coord.y, CARD.WIDTH + 2, CARD.HEIGHT + 2)) {
+                        let highestCardContainerInCoord = cardContainerListAtCoord[cardContainerListAtCoord.length - 1];
 
-                        newCardContainer.placeAbove(highestCardContainerInCoord);
+                        //we also don't want to place our new container above any container that is also below any highest container under us!
+                        if(newCardContainer.getMapOfAllCardContainerIdsBelow()[highestCardContainerInCoord.id]) {
+                            // don't place this container below our new container since it's already contained somewhere in the tree below our new container!
+                        } else {
+                            Object.keys(highestCardContainerInCoord.getMapOfAllCardContainerIdsBelow()).forEach(cardContainerIdUnderHighest => {
+
+                                let newBelowList = [];
+                                newCardContainer.below.forEach(belowNew => {
+                                    if(belowNew.id == cardContainerIdUnderHighest) {
+                                        belowNew.above = belowNew.above.filter(cardContainerAbove => cardContainerAbove.id != newCardContainer.id);
+                                    } else {
+                                        newBelowList.push(belowNew);
+                                    }
+                                });
+
+                                newCardContainer.below = newBelowList;
+                                // also go through any containers that were previously placed – containers below the highest facing container don't need to be placed under our new container - since they'll be covered by that highest facing container - we can safely remove.
+                            });
+
+                            newCardContainer.placeAbove(highestCardContainerInCoord);
+                        }
                     }
                 }
             }); 
@@ -145,11 +178,9 @@ class TemplateEditor {
 
             let cardContainerCoordKey = placeX + "|" + placeY;
             if(!this.allCardContainersHighestRankMap[cardContainerCoordKey]) {
-                this.allCardContainersHighestRankMap[cardContainerCoordKey] = newCardContainer;
+                this.allCardContainersHighestRankMap[cardContainerCoordKey] = [newCardContainer];
             } else {
-                if(this.allCardContainersHighestRankMap[cardContainerCoordKey].rank < newCardContainer.rank) { 
-                    this.allCardContainersHighestRankMap[cardContainerCoordKey] = newCardContainer;
-                }
+                this.allCardContainersHighestRankMap[cardContainerCoordKey].push(newCardContainer);
             }
 
             this.allCardContainers.push(newCardContainer);
@@ -214,6 +245,7 @@ class TemplateEditor {
             stroke(100);
             rect(width/2, (height - 100)/2, this.placeMaxWidth, this.placeMaxHeight, CARD.CORNER_RADIUS);
 
+            strokeWeight(2);
             for(let x = this.placeMinX + CARD.WIDTH; x < this.placeMaxX; x += CARD.WIDTH) {
                 for(let y = this.placeMinY + CARD.HEIGHT; y < this.placeMaxY; y += CARD.HEIGHT) {
                     point(x, y);
@@ -221,6 +253,8 @@ class TemplateEditor {
             }
 
             stroke(255);
+            strokeWeight(1);
+            fill(255, 100);
             rect(this.placeX, this.placeY, CARD.WIDTH + 2, CARD.HEIGHT + 2, CARD.CORNER_RADIUS);
         } else if(this.editorMode === 2) {
             this.previewScene.render();
