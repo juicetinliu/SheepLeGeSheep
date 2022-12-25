@@ -47,8 +47,6 @@ class TemplateEditor {
 
             //Finally remove all traces
             this.allCardContainers.splice(this.allCardContainers.length-1, 1);
-
-            console.log(this.allCardContainersHighestRankMap, this.allCardContainers)
             return true;
         });
         
@@ -227,7 +225,7 @@ class TemplateEditor {
         }
 
         layoutString = JSON.stringify(layout);
-
+        console.log(layoutString);
         return layoutString;
     }
     
