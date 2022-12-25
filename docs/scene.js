@@ -3,14 +3,46 @@ class Scene {
         this.sceneButtons = [];
         this.allCardContainers = [];
         this.cardScoreboard = new CardScoreboard();
+
+        this.colorFaceProvider = new ColorFaceProvider();
+        this.imageFaceProvider = new ImageFaceProvider();
+
+        this.cardFaceProvider = this.colorFaceProvider;
         this.sceneGenerator = sceneGenerator;
 
-        this.resetButton = new SceneButton(this, width/2, height/2, 100, 50, CARD.CORNER_RADIUS, "RESET");
+        this.resetButton = new TextButton(this.sceneButtons, width/2, height/2, 100, 50, CARD.CORNER_RADIUS, "RESET");
         this.resetButton.disable();
         this.resetButton.onClick(() => {
             this.reset();
             this.createScene();
         });
+        
+        this.imageFacesButton = new IconButton(this.sceneButtons, width-50, height-120, 40, 40, CARD.CORNER_RADIUS, "face");
+        this.imageFacesButton.disable();
+
+        this.colorFacesButton = new IconButton(this.sceneButtons, width-50, height-120, 40, 40, CARD.CORNER_RADIUS, "color");
+        this.colorFacesButton.enable();
+
+        this.imageFacesButton.onClick(() => {
+            this.toggleCardFaceProvider();
+            return true;
+        });
+
+        this.colorFacesButton.onClick(() => {
+            this.toggleCardFaceProvider();
+            return true;
+        });
+
+        this.isColorFaceProvider = true;
+
+        this.notLosing = true;
+    }
+
+    setup() {
+        this.reset();
+        this.colorFaceProvider.setup();
+        this.imageFaceProvider.setup();
+        this.createScene();
     }
 
     createScene() {
@@ -28,6 +60,20 @@ class Scene {
         this.allCardContainers = [];
         this.cardScoreboard.reset();
         this.resetButton.disable();
+        this.notLosing = true;
+    }
+
+    toggleCardFaceProvider() {
+        this.isColorFaceProvider = !this.isColorFaceProvider;
+        if (this.isColorFaceProvider) {
+            this.cardFaceProvider = this.colorFaceProvider;
+            this.colorFacesButton.enable();
+            this.imageFacesButton.disable();
+        } else { 
+            this.cardFaceProvider = this.imageFaceProvider;
+            this.imageFacesButton.enable();
+            this.colorFacesButton.disable();
+        }
     }
 
     generateCardsLayoutDemo() {
@@ -64,27 +110,44 @@ class Scene {
     rankContainers() {
         if(!this.allCardContainers.length) return;
 
-        let allContainers = Array.from(this.allCardContainers);
+        let unRankedContainers = Array.from(this.allCardContainers);
 
-        let currContainer = allContainers.pop();
+        
+        let toCheckContainers = [];
+        let nextCheckContainers = [];
 
-        currContainer.isRanked = true;
+        unRankedContainers.forEach(container => {
+            if(!container.above.length && container.below.length) {
+                //these are the topmost containers
+                container.isRanked = true;
+                toCheckContainers.push(container);
+            } else {
+                nextCheckContainers.push(container);
+            }
+        });
+        
+        while(nextCheckContainers.length) {
+            toCheckContainers.forEach(containerToCheck => {
+                containerToCheck.below.forEach(cardContainerBelow => {
+                    if(!cardContainerBelow.isRanked) {
+                        cardContainerBelow.rank = containerToCheck.rank - 1;
+                    }
+                });
+            });
 
-        while(allContainers.length) {
-            currContainer.above.forEach(cardAbove => {
-                if(!cardAbove.isRanked) {
-                    cardAbove.rank = currContainer.rank + 1;
-                    cardAbove.isRanked = true;
+            toCheckContainers = [];
+            let tempNextCheckContainers = [];
+
+            nextCheckContainers.forEach(containerToCheck => {
+                let isAboveAllRanked = containerToCheck.above.reduce((a, b) => {return a && b.isRanked}, true);
+                if(isAboveAllRanked) {
+                    containerToCheck.isRanked = true;
+                    toCheckContainers.push(containerToCheck);
+                } else {
+                    tempNextCheckContainers.push(containerToCheck);
                 }
             });
-            currContainer.below.forEach(cardBelow => {
-                if(!cardBelow.isRanked) {
-                    cardBelow.rank = currContainer.rank - 1;
-                    cardBelow.isRanked = true;
-                }
-            });
-            
-            currContainer = allContainers.pop();
+            nextCheckContainers = tempNextCheckContainers;
         }
     }
 
@@ -94,14 +157,24 @@ class Scene {
             if(container.isActive) anyCardsLeft = true;
         });
 
-        if(anyCardsLeft) {
-            this.allCardContainers.forEach(container => {
-                container.render();
-            });
+        if(this.notLosing) {
+            if(anyCardsLeft) {
+                this.allCardContainers.forEach(container => {
+                    container.render(this.cardFaceProvider);
+                });
+            } else {
+                textSize(24);
+                fill(255);
+                noStroke();
+                text("YOU ARE 羊", width/2, 200);
+
+                this.resetButton.enable();
+            }
         } else {
             textSize(24);
             fill(255);
-            text("YOU ARE 羊", width/2, 200);
+            noStroke();
+            text("YOU ARE NOT 羊", width/2, 200);
 
             this.resetButton.enable();
         }
@@ -110,26 +183,31 @@ class Scene {
             button.render();
         });
 
-        this.cardScoreboard.render();
+        this.cardScoreboard.render(this.cardFaceProvider);
     }
 
     interact() {
-        let interactedCard = null;
-        this.allCardContainers.forEach(container => {
-            if(!interactedCard) {
-                let interactedContainer = container.interact();
-                if(interactedContainer) {
-                    interactedCard = interactedContainer.card;
+        if(this.notLosing) {
+            let interactedCard = null;
+            this.allCardContainers.forEach(container => {
+                if(!interactedCard) {
+                    let interactedContainer = container.interact();
+                    if(interactedContainer) {
+                        interactedCard = interactedContainer.card;
+                    }
                 }
-            }
-        });
+            });
 
-        if(interactedCard) {
-            this.cardScoreboard.addCard(interactedCard);
+            if(interactedCard) {
+                this.notLosing = this.cardScoreboard.addCard(interactedCard);
+            }
         }
 
+        let buttonPressed = false;
         this.sceneButtons.forEach(button => {
-            button.interact();
+            if(!buttonPressed) {
+                buttonPressed = button.interact() || buttonPressed;
+            }
         });
     }
 }
@@ -158,20 +236,41 @@ class CardContainer {
         cardContainer.above.push(this);
     }
 
-    render() {
+    getMapOfAllCardContainerIdsBelow(out = {}) {
+        if(this.below.length) {
+            this.below.forEach(belowContainer => {
+                out[belowContainer.id] = true;
+                let otherBelowIds = belowContainer.getMapOfAllCardContainerIdsBelow(out);
+                out = {
+                    ...out,
+                    ...otherBelowIds
+                }
+            });
+        }
+
+        return out;
+    }
+
+    render(cardFaceProvider, showBorder = false) {
         let isInteractable = this.isInteractable();
         if(this.isActive && this.card) {
             push();
             translate(this.x, this.y);
-            this.card.render(isInteractable && !isMobileOrTablet, isInteractable);
+            this.card.render(cardFaceProvider, isInteractable && !isMobileOrTablet, isInteractable);
             pop();
         }
-        if(this.debug) {
+        if(this.debug || showBorder) {
             push();
             translate(this.x, this.y);
             stroke(255);
+            strokeWeight(1);
             noFill();
             rect(0, 0, CARD.WIDTH + 2, CARD.HEIGHT + 2, CARD.CORNER_RADIUS);
+            if(this.debug) {
+                fill(255);
+                textSize(24);
+                text(this.rank, 0, 0);
+            }
             pop();
         }
     }
@@ -221,14 +320,15 @@ class CardScoreboard {
         this.cardBuckets = {};
     }
 
-    render() {
+    render(cardFaceProvider) {
         stroke(255);
+        strokeWeight(1);
         noFill();
         rect(this.x,this.y, this.width, this.height, CARD.CORNER_RADIUS);
         this.cards.forEach((card, index) => {
             push();
             translate((this.x - this.width/2) + this.spacing + CARD.WIDTH/2 + (index * (CARD.WIDTH + this.spacing)), this.y);
-            card.render();
+            card.render(cardFaceProvider);
             pop();
         })
     }
@@ -241,6 +341,8 @@ class CardScoreboard {
             this.cardBuckets[card.cardType].push(card);
         }
         this.processCards();
+
+        return this.cards.length < this.numberOfSlots;
     }
 
     processCards() {
